@@ -248,11 +248,16 @@
             box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
         }
 
+        .calendar-wrapper {
+            overflow-x: auto;
+        }
+
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 10px;
             margin-bottom: 30px;
+            min-width: 500px;
         }
 
         .calendar-day {
@@ -346,7 +351,7 @@
 
         .habit-grid {
             display: grid;
-            grid-template-columns: 200px repeat(28, 1fr);
+            grid-template-columns: 200px repeat(31, 1fr);
             gap: 5px;
             margin-bottom: 20px;
             overflow-x: auto;
@@ -503,12 +508,44 @@
         .small-btn:hover {
             background: #5a6268;
         }
+
+        .schedule-wrapper {
+            overflow-x: auto;
+        }
+
+        .schedule-wrapper table {
+            min-width: 700px;
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 768px) {
+            .content {
+                padding: 15px;
+            }
+
+            #newTaskInput {
+                width: 100% !important;
+                margin-bottom: 10px;
+            }
+            #taskPriority, #taskCategory {
+                width: 48% !important;
+                margin-bottom: 10px;
+            }
+
+            .habit-name, .habit-header {
+                position: static;
+            }
+
+            .habit-grid {
+                grid-template-columns: 150px repeat(31, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📅 Интерактивный Планер 2026</h1>
+            <h1>📅 Интерактивный Планер</h1>
             <p>Управляйте своим временем эффективно • <span id="saveStatus" style="font-size: 0.9em;">💾 Данные сохраняются автоматически</span></p>
         </div>
 
@@ -535,8 +572,10 @@
 
             <!-- Monthly Overview -->
             <div id="monthly" class="tab-content">
-                <h2 class="section-title">Февраль 2026</h2>
-                <div class="calendar-grid" id="calendarGrid"></div>
+                <h2 class="section-title">Месячный обзор</h2>
+                <div class="calendar-wrapper">
+                    <div class="calendar-grid" id="calendarGrid"></div>
+                </div>
                 <div class="goals-section">
                     <h3>🎯 Цели месяца</h3>
                     <div id="monthlyGoals"></div>
@@ -585,7 +624,7 @@
 
             <!-- Habit Tracker -->
             <div id="habits" class="tab-content">
-                <h2 class="section-title">Трекер привычек (Февраль)</h2>
+                <h2 class="section-title">Трекер привычек</h2>
                 <div style="margin-bottom: 10px; text-align: right;">
                     <button class="small-btn" onclick="clearAllHabits()">🧹 Очистить отметки по всем привычкам</button>
                 </div>
@@ -611,7 +650,9 @@
                     <button class="small-btn" onclick="clearScheduleDay(5)">Сб</button>
                     <button class="small-btn" onclick="clearScheduleDay(6)">Вс</button>
                 </div>
-                <div id="scheduleGrid"></div>
+                <div class="schedule-wrapper">
+                    <div id="scheduleGrid"></div>
+                </div>
             </div>
 
             <!-- Notes -->
@@ -629,6 +670,8 @@
     </div>
 
     <script>
+        const HABIT_DAYS = 31;
+
         // Data storage
         let plannerData = {
             weeklyTasks: {},
@@ -636,11 +679,11 @@
             monthlyGoals: [],
             tasks: [],
             habits: [
-                {name: '🏃 Утренняя зарядка', days: Array(28).fill(false)},
-                {name: '📖 Чтение (30 мин)', days: Array(28).fill(false)},
-                {name: '💻 Изучение программирования', days: Array(28).fill(false)},
-                {name: '💧 Вода (2л)', days: Array(28).fill(false)},
-                {name: '🧘 Медитация', days: Array(28).fill(false)}
+                {name: '🏃 Утренняя зарядка', days: Array(HABIT_DAYS).fill(false)},
+                {name: '📖 Чтение (30 мин)', days: Array(HABIT_DAYS).fill(false)},
+                {name: '💻 Изучение программирования', days: Array(HABIT_DAYS).fill(false)},
+                {name: '💧 Вода (2л)', days: Array(HABIT_DAYS).fill(false)},
+                {name: '🧘 Медитация', days: Array(HABIT_DAYS).fill(false)}
             ],
             schedule: {},
             notes: []
@@ -702,47 +745,47 @@
 
         // Weekly Planner
         function initWeekly() {
-            const days = [
-                {name: 'Понедельник', date: '03.02.2026'},
-                {name: 'Вторник', date: '04.02.2026'},
-                {name: 'Среда', date: '05.02.2026'},
-                {name: 'Четверг', date: '06.02.2026'},
-                {name: 'Пятница', date: '07.02.2026'},
-                {name: 'Суббота', date: '08.02.2026'},
-                {name: 'Воскресенье', date: '09.02.2026'}
-            ];
+            const weekGrid = document.getElementById('weekGrid');
+            weekGrid.innerHTML = '';
 
-            const grid = document.getElementById('weekGrid');
-            grid.innerHTML = '';
+            const daysNames = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
 
-            days.forEach((day, index) => {
-                if (!plannerData.weeklyTasks[index]) {
-                    plannerData.weeklyTasks[index] = [];
-                }
+            const today = new Date();
+            const day = today.getDay(); // 0-вс,1-пн...
+            const diffToMonday = (day === 0 ? -6 : 1 - day);
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + diffToMonday);
+
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(monday);
+                date.setDate(monday.getDate() + i);
+                const dateStr = date.toLocaleDateString('ru-RU');
+
+                if (!plannerData.weeklyTasks[i]) plannerData.weeklyTasks[i] = [];
 
                 const card = document.createElement('div');
                 card.className = 'day-card';
                 card.innerHTML = `
                     <div class="day-card-header">
-                        <div class="day-header">${day.name}</div>
-                        <button class="clear-day-btn" onclick="clearWeeklyDay(${index})">Очистить день</button>
+                        <div class="day-header">${daysNames[i]}</div>
+                        <button class="clear-day-btn" onclick="clearWeeklyDay(${i})">Очистить день</button>
                     </div>
-                    <div class="day-date">${day.date}</div>
+                    <div class="day-date">${dateStr}</div>
                     <div class="time-block">
                         <div class="time-label">🌅 Утро (6-12)</div>
-                        <input type="text" placeholder="Задачи на утро..." value="${plannerData.weeklyTasks[index][0] || ''}" onchange="updateWeeklyTask(${index}, 0, this.value)">
+                        <input type="text" placeholder="Задачи на утро..." value="${plannerData.weeklyTasks[i][0] || ''}" onchange="updateWeeklyTask(${i},0,this.value)">
                     </div>
                     <div class="time-block">
                         <div class="time-label">☀️ День (12-18)</div>
-                        <input type="text" placeholder="Задачи на день..." value="${plannerData.weeklyTasks[index][1] || ''}" onchange="updateWeeklyTask(${index}, 1, this.value)">
+                        <input type="text" placeholder="Задачи на день..." value="${plannerData.weeklyTasks[i][1] || ''}" onchange="updateWeeklyTask(${i},1,this.value)">
                     </div>
                     <div class="time-block">
                         <div class="time-label">🌙 Вечер (18-22)</div>
-                        <input type="text" placeholder="Задачи на вечер..." value="${plannerData.weeklyTasks[index][2] || ''}" onchange="updateWeeklyTask(${index}, 2, this.value)">
+                        <input type="text" placeholder="Задачи на вечер..." value="${plannerData.weeklyTasks[i][2] || ''}" onchange="updateWeeklyTask(${i},2,this.value)">
                     </div>
                 `;
-                grid.appendChild(card);
-            });
+                weekGrid.appendChild(card);
+            }
 
             renderWeeklyGoals();
         }
@@ -808,7 +851,15 @@
             const grid = document.getElementById('calendarGrid');
             grid.innerHTML = '';
 
-            const headers = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+
+            const monthTitle = document.querySelector('#monthly .section-title');
+            const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+            monthTitle.textContent = `${monthNames[month]} ${year}`;
+
+            const headers = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
             headers.forEach(h => {
                 const cell = document.createElement('div');
                 cell.className = 'calendar-day header';
@@ -816,18 +867,21 @@
                 grid.appendChild(cell);
             });
 
-            // February 2026 starts on Sunday (day 0)
-            for (let i = 0; i < 6; i++) {
+            const firstDay = new Date(year, month, 1);
+            const startWeekDay = (firstDay.getDay() + 6) % 7;
+
+            for (let i = 0; i < startWeekDay; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'calendar-day';
                 grid.appendChild(cell);
             }
 
-            for (let day = 1; day <= 28; day++) {
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let d = 1; d <= daysInMonth; d++) {
                 const cell = document.createElement('div');
                 cell.className = 'calendar-day';
-                if (day === 4) cell.classList.add('today');
-                cell.textContent = day;
+                if (d === now.getDate()) cell.classList.add('today');
+                cell.textContent = d;
                 grid.appendChild(cell);
             }
 
@@ -953,20 +1007,18 @@
             const grid = document.getElementById('habitGrid');
             grid.innerHTML = '';
 
-            // Header
             const headerCell = document.createElement('div');
             headerCell.className = 'habit-cell habit-header';
             headerCell.textContent = 'Привычка';
             grid.appendChild(headerCell);
 
-            for (let i = 1; i <= 28; i++) {
+            for (let i = 1; i <= HABIT_DAYS; i++) {
                 const dayCell = document.createElement('div');
                 dayCell.className = 'habit-cell habit-header';
                 dayCell.textContent = i;
                 grid.appendChild(dayCell);
             }
 
-            // Habits
             plannerData.habits.forEach((habit, habitIndex) => {
                 const nameWrapper = document.createElement('div');
                 nameWrapper.className = 'habit-cell habit-name';
@@ -988,7 +1040,7 @@
 
                 grid.appendChild(nameWrapper);
 
-                for (let day = 0; day < 28; day++) {
+                for (let day = 0; day < HABIT_DAYS; day++) {
                     const dayCell = document.createElement('div');
                     dayCell.className = `habit-cell habit-day ${habit.days[day] ? 'checked' : ''}`;
                     dayCell.textContent = habit.days[day] ? '✓' : '';
@@ -1003,7 +1055,7 @@
             if (input.value.trim()) {
                 plannerData.habits.push({
                     name: input.value.trim(),
-                    days: Array(28).fill(false)
+                    days: Array(HABIT_DAYS).fill(false)
                 });
                 input.value = '';
                 renderHabits();
@@ -1019,7 +1071,7 @@
 
         function clearHabit(habitIndex) {
             if (confirm('Очистить все отметки по этой привычке?')) {
-                plannerData.habits[habitIndex].days = Array(28).fill(false);
+                plannerData.habits[habitIndex].days = Array(HABIT_DAYS).fill(false);
                 renderHabits();
                 saveData();
             }
@@ -1027,7 +1079,7 @@
 
         function clearAllHabits() {
             if (confirm('Очистить отметки по всем привычкам?')) {
-                plannerData.habits.forEach(h => h.days = Array(28).fill(false));
+                plannerData.habits.forEach(h => h.days = Array(HABIT_DAYS).fill(false));
                 renderHabits();
                 saveData();
             }
@@ -1136,10 +1188,9 @@
             document.getElementById('completedTasks').textContent = completed;
             document.getElementById('totalTasks').textContent = total;
 
-            // Calculate habit streak
             let streak = 0;
             if (plannerData.habits.length > 0) {
-                for (let day = 0; day < 28; day++) {
+                for (let day = 0; day < HABIT_DAYS; day++) {
                     const allDone = plannerData.habits.every(h => h.days[day]);
                     if (allDone) streak++;
                     else if (streak > 0) break;
@@ -1150,8 +1201,8 @@
 
         // Export to Excel (CSV format)
         function exportToExcel() {
-            let csv = 'Трекер привычек - Февраль 2026\n\n';
-            csv += 'Привычка,' + Array.from({length: 28}, (_, i) => i + 1).join(',') + ',Итого\n';
+            let csv = 'Трекер привычек\n\n';
+            csv += 'Привычка,' + Array.from({length: HABIT_DAYS}, (_, i) => i + 1).join(',') + ',Итого\n';
 
             plannerData.habits.forEach(habit => {
                 const total = habit.days.filter(d => d).length;
@@ -1171,10 +1222,8 @@
             link.click();
         }
 
-        // Initialize on load
         window.onload = init;
 
-        // Handle Enter key for inputs
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && e.target.id === 'newTaskInput') {
                 addTask();
